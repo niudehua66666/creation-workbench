@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - motion-reference-mac/package.json
+      - motion-reference-mac/scripts/build-media.py
       - .github/workflows/release-macos.yml
 permissions:
   contents: write

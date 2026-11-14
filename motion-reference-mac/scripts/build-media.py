@@ -6,9 +6,12 @@ root=Path(__file__).resolve().parent.parent
 build=root/'.cache/media-build'; sources=build/'sources'; sources.mkdir(parents=True,exist_ok=True)
 # pkg-config escapes non-ASCII prefixes; use an ASCII-only temporary prefix.
 prefix=Path(tempfile.gettempdir())/('creation-workbench-media-'+str(os.getuid()));prefix.mkdir(exist_ok=True)
-env=dict(os.environ,PATH=str(prefix/'bin')+':'+str(build/'tools/bin')+':'+os.environ['PATH'],PKG_CONFIG_PATH=str(prefix/'lib/pkgconfig'),MACOSX_DEPLOYMENT_TARGET='15.0')
+env=dict(os.environ,PATH=str(prefix/'bin')+':'+str(build/'tools/bin')+':'+os.environ['PATH'],PKG_CONFIG_PATH=str(prefix/'lib/pkgconfig'),MACOSX_DEPLOYMENT_TARGET='15.0',PKG_CONFIG_ALLOW_SYSTEM_LIBS='1',PKG_CONFIG_ALLOW_SYSTEM_CFLAGS='1')
 def run(args,cwd):
- print('RUN',args,flush=True);subprocess.run(args,cwd=cwd,env=env,check=True)
+ print('RUN',args,flush=True)
+ result=subprocess.run(args,cwd=cwd,env=env)
+ if result.returncode and (cwd/'ffbuild/config.log').exists():print((cwd/'ffbuild/config.log').read_text(errors='replace')[-12000:],flush=True)
+ result.check_returncode()
 for item in json.loads((root/'scripts/media/sources.json').read_text()):
  archive=sources/item['file']
  if not archive.exists():urllib.request.urlretrieve(item['url'],archive)
