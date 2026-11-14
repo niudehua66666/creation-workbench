@@ -6,9 +6,17 @@
 
 ## 下载与安装
 
-[下载 Mac 测试版](https://github.com/niudehua66666/creation-workbench/releases) · [安装说明](INSTALL.md)
+[下载 Mac 测试版（.dmg，约 492 MB）](https://github.com/niudehua66666/creation-workbench/releases/download/v0.6.1/CreationWorkbench-0.6.1-macOS-arm64.dmg) · [完整安装与排错说明](INSTALL.md)
 
-支持 Apple Silicon、macOS 15+。截图与录屏助手已内置；关窗后可常驻菜单栏，可选登录后启动。0.6.1 尚未进行 Apple Developer ID 签名与公证，首次启动可能被系统阻止。
+**支持 M 系列芯片的 Mac、macOS 15 及以上；当前不支持 Intel Mac 和 Windows。**
+
+1. 下载并打开 `CreationWorkbench-0.6.1-macOS-arm64.dmg`，把“创作工作台”拖入 **Applications（应用程序）**。
+2. 从“应用程序”启动。若提示无法验证开发者，确认来源可信后，按 ** → 系统设置 → 隐私与安全性 → 仍要打开 → 打开** 操作；系统可能要求这台 Mac 的登录密码或 Touch ID，不是验证码。
+3. 首次截图、录屏时，按提示给内置“截录暂存”授予屏幕录制权限。只有使用麦克风时才需要麦克风权限。
+
+**0.6.1 是尚未正式签名、公证的测试版。**若出现“已损坏”“将损坏你的电脑”或恶意软件提示，先按 [完整说明](INSTALL.md) 排查，不套用普通的“仍要打开”步骤。跨机器使用仍待实测，不保证所有电脑都能正常运行。普通使用者不用下载 Source code，也不用运行终端命令。
+
+截图与录屏助手已内置；关窗后可从菜单栏重新打开，可选登录后启动。
 
 ## 功能
 
