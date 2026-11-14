@@ -1,0 +1,31 @@
+import {contextBridge,ipcRenderer,webUtils} from 'electron';
+import type {Bridge} from './types';
+const api:Bridge={
+ keyboardStatus:()=>ipcRenderer.invoke('workbench:keyboard-status'),
+ setKeyboardLocked:locked=>ipcRenderer.invoke('workbench:keyboard-set',locked),
+ requestF4ForceQuitPermission:()=>ipcRenderer.invoke('workbench:f4-permission'),
+ setF4ForceQuitShortcut:enabled=>ipcRenderer.invoke('workbench:f4-set',enabled),
+ setF3RecordingShortcut:enabled=>ipcRenderer.invoke('workbench:f3-set',enabled),
+ requestKeyboardPermission:()=>ipcRenderer.invoke('workbench:keyboard-permission'),
+ trackpadStatus:()=>ipcRenderer.invoke('workbench:trackpad-status'),
+ setTrackpadLocked:locked=>ipcRenderer.invoke('workbench:trackpad-set',locked),
+ captureStatus:()=>ipcRenderer.invoke('workbench:captures'),
+ startCapture:()=>ipcRenderer.invoke('workbench:start-capture'),
+ controlRecorder:action=>ipcRenderer.invoke('workbench:recorder-control',action),
+ installedTools:()=>ipcRenderer.invoke('workbench:installed'),
+ openTool:appPath=>ipcRenderer.invoke('workbench:open-app',appPath),
+ searchTools:keyword=>ipcRenderer.invoke('workbench:search',keyword),
+ toolBookmarks:()=>ipcRenderer.invoke('workbench:bookmarks'),
+ saveToolBookmark:(name,url)=>ipcRenderer.invoke('workbench:save-bookmark',name,url),
+ openToolBookmark:url=>ipcRenderer.invoke('workbench:open-bookmark',url),
+ removeToolBookmark:url=>ipcRenderer.invoke('workbench:remove-bookmark',url),
+ readLinkClipboard:()=>ipcRenderer.invoke('reference:clipboard'),
+ submitLinks:(text,mode)=>ipcRenderer.invoke('reference:submit',text,mode),
+ saveAccount:(name,platform)=>ipcRenderer.invoke('reference:account',name,platform),
+ searchHistory:()=>ipcRenderer.invoke('reference:history'),
+ searchReferences:(platform,keyword)=>ipcRenderer.invoke('reference:search',platform,keyword),
+ attachVideo:id=>ipcRenderer.invoke('reference:attach',id),
+ eagleLibrary:()=>ipcRenderer.invoke('eagle:library'),
+ saveActionClips:(id,createdAt,library,clips)=>ipcRenderer.invoke('eagle:action-clips',id,createdAt,library,clips),
+ authors:()=>ipcRenderer.invoke('authors:list'),addAuthor:n=>ipcRenderer.invoke('authors:add',n),copyBrief:id=>ipcRenderer.invoke('brief:copy',id),list:()=>ipcRenderer.invoke('jobs:list'),environment:()=>ipcRenderer.invoke('environment'),pickVideo:()=>ipcRenderer.invoke('video:pick'),importVideo:(p,id)=>ipcRenderer.invoke('video:import',p,id),action:(id,a,d)=>ipcRenderer.invoke('job:action',id,a,d),image:(id,key)=>ipcRenderer.invoke('job:image',id,key),export:(id,k)=>ipcRenderer.invoke('job:export',id,k),reveal:id=>ipcRenderer.invoke('job:reveal',id),openSource:id=>ipcRenderer.invoke('job:source',id),filePath:f=>webUtils.getPathForFile(f),media:(id,p)=>`motion://${id}/${p}`,subscribe:fn=>{const listener=(_e:unknown,j:any)=>fn(j);ipcRenderer.on('job:update',listener);return ()=>ipcRenderer.removeListener('job:update',listener);}};
+contextBridge.exposeInMainWorld('motion',api);

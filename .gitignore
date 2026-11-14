@@ -1,0 +1,17 @@
+.DS_Store
+node_modules
+.build/
+.swiftpm/
+dist/
+release/
+.cache/
+runtime
+test-results/
+*.log
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.p8
+*.key

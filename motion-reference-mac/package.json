@@ -1,0 +1,63 @@
+{
+  "name": "motion-reference-mac",
+  "version": "0.6.0",
+  "description": "轻录、截图暂存和动效拆解的 Mac 工作台",
+  "private": true,
+  "type": "module",
+  "main": "dist/main.cjs",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "start": "npm run build && electron .",
+    "check": "tsc --noEmit",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "package": "npm run build && electron-builder --mac dir --arm64",
+    "prepare:runtime": "node scripts/prepare-runtime.mjs"
+  },
+  "dependencies": {
+    "@remotion/bundler": "4.0.533",
+    "@remotion/cli": "4.0.533",
+    "@remotion/renderer": "4.0.533",
+    "@types/node": "24.10.1",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "remotion": "4.0.533",
+    "typescript": "5.9.3"
+  },
+  "devDependencies": {
+    "electron": "45.3.1",
+    "electron-builder": "26.18.0",
+    "esbuild": "0.25.12",
+    "tsx": "4.21.0"
+  },
+  "build": {
+    "appId": "local.jackson.motion-reference",
+    "productName": "创作工作台",
+    "asar": false,
+    "files": [
+      "dist/**",
+      "runtime/**",
+      "package.json"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "mac": {
+      "extraResources": [
+        {
+          "from": ".cache/embedded/Trackpad",
+          "to": "Trackpad"
+        }
+      ],
+      "target": "dir",
+      "category": "public.app-category.video",
+      "identity": null,
+      "icon": "assets/icon.icns"
+    },
+    "afterPack": "scripts/after-pack.cjs",
+    "beforePack": "scripts/check-runtime.cjs"
+  },
+  "author": "Jackson",
+  "license": "MIT"
+}
