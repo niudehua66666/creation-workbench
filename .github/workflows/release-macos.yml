@@ -1,0 +1,51 @@
+name: Build and publish macOS beta
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - motion-reference-mac/package.json
+      - .github/workflows/release-macos.yml
+permissions:
+  contents: write
+concurrency:
+  group: macos-release
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: macos-15
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: motion-reference-mac
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26.13.0'
+          cache: npm
+          cache-dependency-path: motion-reference-mac/package-lock.json
+      - name: Check architecture and install dependencies
+        run: |
+          test "$(uname -m)" = arm64
+          npm ci
+      - name: Build pinned media runtime and notices
+        run: python3 scripts/prepare-distribution.py
+      - name: Test source and native tools
+        run: |
+          npm run check
+          npm test
+          ../light-recorder-mac/scripts/test.sh
+      - name: Package and verify isolated render
+        run: |
+          npm run package
+          codesign --verify --deep --strict "release/mac-arm64/创作工作台.app"
+          node scripts/smoke-package.mjs "release/mac-arm64/创作工作台.app"
+          node scripts/create-dmg.mjs
+      - name: Publish prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          version=$(node -p "require('./package.json').version")
+          gh release create "v${version}" --target "$GITHUB_SHA" --prerelease --title "创作工作台 ${version} 测试版" --notes-file ../RELEASE_NOTES.md "release/CreationWorkbench-${version}-macOS-arm64.dmg" release/CreationWorkbench-MediaSources.tar.gz release/SHA256SUMS.txt

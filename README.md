@@ -4,6 +4,12 @@
 
 这是创作工作台的独立源码项目。包含桌面主程序、截录暂存，以及主程序必需的原生组件。没有个人网站、个人录屏、参考视频、登录信息和历史任务数据。
 
+## 下载与安装
+
+[下载 Mac 测试版](https://github.com/niudehua66666/creation-workbench/releases) · [安装说明](INSTALL.md)
+
+支持 Apple Silicon、macOS 15+。截图与录屏助手已内置；关窗后可常驻菜单栏，可选登录后启动。0.6.1 尚未进行 Apple Developer ID 签名与公证，首次启动可能被系统阻止。
+
 ## 功能
 
 - 截图暂存、区域截图、箭头和高亮标注、裁剪、保存副本、多文件拖出。
@@ -51,9 +57,20 @@ npm run build
 
 如果 FFmpeg 或 yt-dlp 不在 PATH 中，使用 `WORKBENCH_FFMPEG` 和 `WORKBENCH_YTDLP` 指定可执行文件的绝对路径。准备脚本不再依赖作者电脑的路径。
 
-将 `light-recorder-mac/dist/截录暂存.app` 手动复制到 `~/Applications` 或 `/Applications` 后，主程序可以找到它。在 `motion-reference-mac` 中执行 `npm start` 会打开桌面应用，并可能启动已安装的截录助手；请在准备使用时执行。
+`npm run build` 会同时构建并内置截录暂存和触控板助手，不需要另外安装。在 `motion-reference-mac` 中执行 `npm start` 会打开桌面应用，并可能启动已安装的截录助手；请在准备使用时执行。
 
-`npm run package` 为 Apple Silicon 生成本机 `.app`，输出到 `motion-reference-mac/release/`。触控板助手由主程序构建脚本生成并内置。当前构建使用 ad-hoc 签名，未做 Apple 公证；本机打包成功不等于已经适合直接分发给所有用户。跨机器发行还需核对运行库动态依赖、第三方许可及安装验证。
+制作发行包：
+
+```sh
+python3 scripts/prepare-distribution.py
+npm run check
+npm test
+npm run package
+node scripts/smoke-package.mjs "release/mac-arm64/创作工作台.app"
+node scripts/create-dmg.mjs
+```
+
+`prepare-distribution.py` 从固定版本源码编译 FFmpeg 和依赖，校验 yt-dlp 官方 SHA-256，并准备运行时、许可证和媒体组件源码附件。首次编译需要数分钟。`create-dmg.mjs` 生成拖拽安装磁盘映像，不启动应用。当前使用 ad-hoc 签名；签名、公证及实机验收状态见安装说明。
 
 ## 数据与权限
 

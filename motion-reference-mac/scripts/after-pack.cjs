@@ -14,5 +14,7 @@ module.exports=async function(context){
   }
  };
  copyDeclarations(path.join(context.packager.projectDir,'node_modules'),path.join(app,'Contents/Resources/app/node_modules'));
+ // Native Remotion media binaries are unused by the graphics-only render path.
+ for(const entry of fs.readdirSync(path.join(app,'Contents/Resources/app/node_modules/@remotion'))){if(entry.startsWith('compositor-'))fs.rmSync(path.join(app,'Contents/Resources/app/node_modules/@remotion',entry),{recursive:true,force:true});}
  execFileSync('/usr/bin/codesign',['--force','--deep','--sign','-',app]);
 };

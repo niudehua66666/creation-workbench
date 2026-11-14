@@ -1,6 +1,6 @@
 {
   "name": "motion-reference-mac",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "轻录、截图暂存和动效拆解的 Mac 工作台",
   "private": true,
   "type": "module",
@@ -48,15 +48,21 @@
         {
           "from": ".cache/embedded/Trackpad",
           "to": "Trackpad"
+        },
+        {
+          "from": ".cache/embedded/Capture",
+          "to": "Capture"
         }
       ],
       "target": "dir",
       "category": "public.app-category.video",
       "identity": null,
-      "icon": "assets/icon.icns"
+      "icon": "assets/icon.icns",
+      "minimumSystemVersion": "15.0"
     },
     "afterPack": "scripts/after-pack.cjs",
-    "beforePack": "scripts/check-runtime.cjs"
+    "beforePack": "scripts/check-runtime.cjs",
+    "artifactName": "CreationWorkbench-${version}-macOS-${arch}.${ext}"
   },
   "author": "Jackson",
   "license": "MIT"

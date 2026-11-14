@@ -12,7 +12,7 @@ enum LightRecorderApp {
         let app = NSApplication.shared
         let delegate = AppDelegate()
         app.delegate = delegate
-        app.setActivationPolicy(.regular)
+        app.setActivationPolicy(CommandLine.arguments.contains("--background") ? .accessory : .regular)
         withExtendedLifetime(delegate) { app.run() }
     }
 }

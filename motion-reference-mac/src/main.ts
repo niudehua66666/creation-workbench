@@ -1,9 +1,10 @@
-import {app,BrowserWindow,ipcMain,dialog,shell,protocol,Menu,clipboard} from 'electron';
+import {app,BrowserWindow,ipcMain,dialog,shell,protocol,Menu,clipboard,Tray,nativeImage} from 'electron';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import {createReadStream, mkdirSync} from 'node:fs';
 import {Readable} from 'node:stream';
 import {Engine} from './engine';
+import {trayIconPNG} from './tray-icon';
 import {publicURL} from './core';
 import {searchTarget} from './reference-links';
 import {SearchHistory} from './search-history';
@@ -17,11 +18,13 @@ const dataDirectory = path.join(app.getPath('appData'), '动效拆解');
 app.setName('创作工作台');
 mkdirSync(dataDirectory,{recursive:true});
 app.setPath('userData',dataDirectory);
-let window:BrowserWindow|undefined,engine:Engine,quitting=false;
-if(!app.requestSingleInstanceLock())app.quit();
-app.on('second-instance',()=>{window?.show();window?.focus();});
+let window:BrowserWindow|undefined,engine:Engine,quitting=false,tray:Tray|undefined;
+let showWorkbench=()=>{};
+const primaryInstance=app.requestSingleInstanceLock();
+if(!primaryInstance)app.quit();
+app.on('second-instance',()=>showWorkbench());
 app.on('before-quit',event=>{if(engine&&!quitting){event.preventDefault();quitting=true;void engine.shutdown().finally(()=>app.quit());}});
-app.whenReady().then(async()=>{
+if(primaryInstance)app.whenReady().then(async()=>{
  engine = new Engine(dataDirectory, app.getAppPath());
  await engine.init();
  const searchHistory = new SearchHistory(path.join(dataDirectory, 'search-history.json'));
@@ -35,7 +38,9 @@ app.whenReady().then(async()=>{
  });
  const handle=(name:string,fn:(...a:any[])=>any)=>ipcMain.handle(name,async(event,...args)=>{if(event.sender!==window?.webContents||event.senderFrame!==window.webContents.mainFrame)throw new Error('不允许的调用');return fn(...args);});
  const bookmarks = new ToolBookmarks(path.join(dataDirectory,'tool-bookmarks.json'));
- const startingCaptures = captureStatus(true).catch(() => undefined);
+ const embeddedRoot=app.isPackaged?process.resourcesPath:path.join(app.getAppPath(),'.cache','embedded');
+ const captureApp=path.join(embeddedRoot,'Capture','截录暂存.app');
+ const startingCaptures = captureStatus(true,captureApp).catch(() => undefined);
  const home = app.getPath('home');
  const trackpad = new TrackpadController([
   path.join(home, 'Applications', '触控板锁.app'),
@@ -67,7 +72,7 @@ app.whenReady().then(async()=>{
  };
  handle('workbench:captures', async () => {
   await startingCaptures;
-  return captureStatus();
+  return captureStatus(false,captureApp);
  });
  handle('workbench:recorder-control', (action: unknown) => {
   if (action !== 'record' && action !== 'screenshot' && action !== 'shelf' && action !== 'settings') {
@@ -75,7 +80,7 @@ app.whenReady().then(async()=>{
   }
   return controlRecorder(action);
  });
- handle('workbench:start-capture', () => captureStatus(true));
+ handle('workbench:start-capture', () => captureStatus(true,captureApp));
  handle('workbench:installed', () => installedTools());
  handle('workbench:open-app', async appPath => {
   if (!(await installedTools()).some(application => application.path === appPath)) throw new Error('找不到这个应用');
@@ -131,9 +136,23 @@ app.whenReady().then(async()=>{
  const create=()=>{
   window=new BrowserWindow({title:'创作工作台',width:1400,height:940,minWidth:1100,minHeight:720,backgroundColor:'#101113',titleBarStyle:'hiddenInset',trafficLightPosition:{x:20,y:20},webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true}});
   window.webContents.setWindowOpenHandler(()=>({action:'deny'}));window.webContents.on('will-navigate',e=>e.preventDefault());window.webContents.session.setPermissionRequestHandler((_w,_p,callback)=>callback(false));window.loadFile(path.join(__dirname,'index.html'));
+  window.on('close',event=>{if(!quitting){event.preventDefault();window?.hide();}});
   window.on('closed',()=>{window=undefined;});
  };
  engine.on('job',job=>window?.webContents.send('job:update',job));
  Menu.setApplicationMenu(Menu.buildFromTemplate([{label:'创作工作台',submenu:[{role:'about'},{type:'separator'},{role:'hide'},{role:'hideOthers'},{type:'separator'},{role:'quit'}]},{label:'编辑',submenu:[{role:'undo'},{role:'redo'},{type:'separator'},{role:'cut'},{role:'copy'},{role:'paste'},{role:'selectAll'}]},{label:'窗口',submenu:[{role:'minimize'},{role:'zoom'},{role:'front'}]}]));
- create();app.on('activate',()=>{if(!window)create();else window.show();});
+ showWorkbench=()=>{if(!window)create();if(window?.isMinimized())window.restore();window?.show();window?.focus();};
+ const icon=nativeImage.createFromDataURL('data:image/png;base64,'+trayIconPNG).resize({width:18,height:18});
+ icon.setTemplateImage(true);tray=new Tray(icon);tray.setToolTip('创作工作台');
+ const trayMenu=()=>Menu.buildFromTemplate([
+  {label:'打开创作工作台',click:()=>showWorkbench()},
+  {label:'显示截录暂存',click:()=>{void captureStatus(true,captureApp).then(()=>controlRecorder('shelf')).catch(error=>dialog.showErrorBox('截录暂存',error.message));}},
+  {type:'separator'},
+  {label:'登录后自动启动',type:'checkbox',checked:app.getLoginItemSettings().openAtLogin,enabled:app.isPackaged,click:item=>{app.setLoginItemSettings({openAtLogin:item.checked,args:['--background']});}},
+  {label:'退出创作工作台',click:()=>app.quit()},
+ ]);
+ tray.on('click',()=>{tray?.setContextMenu(trayMenu());tray?.popUpContextMenu();});
+ tray.setContextMenu(trayMenu());
+ if(!process.argv.includes('--background')&&!app.getLoginItemSettings().wasOpenedAtLogin)showWorkbench();
+ app.on('activate',()=>showWorkbench());
 });

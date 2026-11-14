@@ -22,9 +22,12 @@ export class MediaTools {
   const pages:string[]=[];for(let offset=0;offset<times.length;offset+=12){const file=path.join(directory,`sheet-${offset/12}.jpg`);await run(this.ffmpeg,['-hide_banner','-loglevel','error','-nostdin','-y','-start_number',String(offset+1),'-i',path.join(directory,'cut-%03d.jpg'),'-vf',`tile=4x3:nb_frames=${Math.min(12,times.length-offset)}:padding=4:color=0x111720`,'-frames:v','1',file],{signal});pages.push(file);}return pages;
  }
  async frames(input:string,directory:string,duration:number,dense:boolean,signal:AbortSignal,progress:(n:number,t:number)=>void,maxFrames=96){
-  await fs.mkdir(directory,{recursive:true});const interval=dense?Math.max(.1,duration/maxFrames):Math.max(.5,duration/48);const framePattern=path.join(directory,'frame-%04d.jpg');
+  if(!Number.isFinite(duration)||duration<=0)throw new Error('无法抽取无有效时长的视频');
+  await fs.mkdir(directory,{recursive:true});
+  for(const name of await fs.readdir(directory)){if(/^(frame-\d+|sheet-\d+)\.jpg$/.test(name))await fs.unlink(path.join(directory,name));}
+  const interval=Math.min(duration,dense?Math.max(.1,duration/maxFrames):Math.max(.5,duration/48));const framePattern=path.join(directory,'frame-%04d.jpg');
   const expected=Math.max(1,Math.round(duration/interval));
-  await run(this.ffmpeg,['-hide_banner','-loglevel','error','-nostdin','-y','-i',input,'-an','-vf',`fps=1/${interval},scale=480:-2`,'-q:v','3',framePattern,'-progress','pipe:1','-nostats'],{signal,onLine:l=>{if(l.startsWith('frame='))progress(Number(l.split('=')[1]),expected);}});
+  await run(this.ffmpeg,['-hide_banner','-loglevel','error','-nostdin','-y','-i',input,'-an','-vf',`fps=1/${interval}:start_time=0:round=up,scale=480:-2`,'-q:v','3',framePattern,'-progress','pipe:1','-nostats'],{signal,onLine:l=>{if(l.startsWith('frame='))progress(Number(l.split('=')[1]),expected);}});
   const files=(await fs.readdir(directory)).filter(n=>/^frame-\d+\.jpg$/.test(n)).sort();const pages:string[]=[];
   // Label each tile with a frame-derived local timestamp before making contact sheets.
   const font='/System/Library/Fonts/Menlo.ttc';

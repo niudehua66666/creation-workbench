@@ -13,6 +13,6 @@ let package = Package(
             .product(name: "ScreenshotEditing", package: "screenshot-editor-mac"),
             .product(name: "ScreenshotWatching", package: "recent-files-mac")
         ]),
-        .testTarget(name: "RecorderCoreTests", dependencies: ["RecorderCore"])
+        .testTarget(name: "RecorderCoreTests", dependencies: ["RecorderCore", .product(name: "ScreenshotEditing", package: "screenshot-editor-mac")])
     ]
 )

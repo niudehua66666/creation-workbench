@@ -59,13 +59,14 @@ export async function installedTools(): Promise<InstalledTool[]> {
  return directories.flat().sort((a,b) => a.name.localeCompare(b.name,'zh-CN'));
 }
 
-export async function captureStatus(startMissing = false): Promise<CaptureTool> {
+export async function captureStatus(startMissing = false, embeddedApp?: string): Promise<CaptureTool> {
  const [applications, processes] = await Promise.all([
   installedTools(),
   run('/bin/ps', ['-ax', '-o', 'comm='], {maxBuffer: 1024 * 1024}),
  ]);
  const running = new Set(processes.stdout.split('\n').map(line => line.trim()));
- const installed = captureBundles.flatMap(bundle => applications.filter(app => path.basename(app.path) === bundle));
+ const embedded=embeddedApp&&await fs.stat(embeddedApp).then(s=>s.isDirectory()).catch(()=>false)?[{name:'截录暂存',path:embeddedApp}]:[];
+ const installed = [...embedded,...captureBundles.flatMap(bundle => applications.filter(app => path.basename(app.path) === bundle))];
  if (!installed.length) return {status:'missing'};
  if (installed.some(app => running.has(path.join(app.path,'Contents','MacOS','LightRecorder')))) {
   const controls = await recorderControls().catch(() => undefined);
@@ -74,6 +75,11 @@ export async function captureStatus(startMissing = false): Promise<CaptureTool> 
  if (!startMissing) return {status:'stopped'};
  try {
   await run('/usr/bin/open',['-g','-j','-a',installed[0].path,'--args','--background'],{timeout:8000});
+  for(let attempt=0;attempt<20;attempt++){
+   const controls=await recorderControls().catch(()=>undefined);
+   if(controls)return {status:'ready',controls};
+   await new Promise(resolve=>setTimeout(resolve,150));
+  }
   return {status:'starting'};
  } catch {
   return {status:'stopped'};

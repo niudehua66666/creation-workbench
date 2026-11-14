@@ -2,14 +2,17 @@ import {spawn,type ChildProcessWithoutNullStreams} from 'node:child_process';
 import {EventEmitter} from 'node:events';
 import {createInterface} from 'node:readline';
 import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import {Cancelled} from './process';
-export function findCodex(){return [process.env.MOTION_CODEX,'/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex','/Applications/Codex.app/Contents/Resources/codex','/opt/homebrew/bin/codex'].find(p=>p&&fs.existsSync(p))??'codex';}
+export function findCodex(){return [process.env.MOTION_CODEX,'/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex','/Applications/Codex.app/Contents/Resources/codex','/opt/homebrew/bin/codex','/usr/local/bin/codex',path.join(os.homedir(),'.local/bin/codex'),path.join(os.homedir(),'Applications/Codex.app/Contents/Resources/codex')].find(p=>p&&fs.existsSync(p))??'codex';}
 export class CodexClient extends EventEmitter {
  private child?:ChildProcessWithoutNullStreams;private nextId=1;private pending=new Map<number,{resolve:(v:any)=>void;reject:(e:Error)=>void;timer:NodeJS.Timeout}>();
  constructor(public binary=findCodex()){super();}
  async connect(){
   this.child=spawn(this.binary,['app-server','--stdio'],{stdio:'pipe'});
-  this.child.on('error',e=>{this.fail(e);this.emit('closed',e);});
+  this.child.on('error',e=>{const error=(e as NodeJS.ErrnoException).code==='ENOENT'?new Error('未找到 Codex。请安装并登录 Codex 后使用 AI 分析；截图和录屏不受影响。'):e;this.fail(error);this.emit('closed',error);});
+  this.child.stdin.on('error',e=>this.fail(e));
   this.child.on('exit',()=>{const e=new Error('Codex 连接已结束，请重试');this.fail(e);this.emit('closed',e);});
   this.child.stderr.on('data',()=>{});
   createInterface({input:this.child.stdout}).on('line',line=>{let msg:any;try{msg=JSON.parse(line);}catch{return;}

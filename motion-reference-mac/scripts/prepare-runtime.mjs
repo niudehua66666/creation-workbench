@@ -14,10 +14,12 @@ function executable(name, variable) {
 // FFmpeg uses -version rather than --version.
 const ffmpeg=process.env.WORKBENCH_FFMPEG || execFileSync('/usr/bin/which',['ffmpeg'],{encoding:'utf8'}).trim();
 execFileSync(ffmpeg,['-version'],{stdio:'ignore',timeout:30000});
+const ffprobe=process.env.WORKBENCH_FFPROBE || path.join(path.dirname(ffmpeg),'ffprobe');
+execFileSync(ffprobe,['-version'],{stdio:'ignore',timeout:30000});
 const ytdlp=executable('yt-dlp','WORKBENCH_YTDLP');
 await mkdir('runtime/browser',{recursive:true});
 await mkdir('runtime/bin',{recursive:true});
-for(const [source,destination] of [[process.execPath,'runtime/node'],[ffmpeg,'runtime/bin/ffmpeg'],[ytdlp,'runtime/bin/yt-dlp']]) {
+for(const [source,destination] of [[process.execPath,'runtime/node'],[ffmpeg,'runtime/bin/ffmpeg'],[ffprobe,'runtime/bin/ffprobe'],[ytdlp,'runtime/bin/yt-dlp']]) {
  await copyFile(source,destination);
  await chmod(destination,0o755);
 }
